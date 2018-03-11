@@ -20,27 +20,41 @@ public class SmsListener extends BroadcastReceiver {
         // TODO: This method is called when the BroadcastReceiver is receiving
         // an Intent broadcast.
         // throw new UnsupportedOperationException("Not yet implemented");
-        Log.i("sms", "on receive," + intent.getAction());
+        Log.d("sms-receive", "on receive," + intent.getAction());
         if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) {
             for (SmsMessage smsMessage : Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
 
                 String messageBody = smsMessage.getMessageBody();
-                String emailFrom = smsMessage.getEmailFrom();
                 String address = smsMessage.getOriginatingAddress();
-                Log.i("sms", "body: " + messageBody);
-                Log.i("sms", "address: " + address);
+                // default message filter
+                String message = "[" + "TEST" + "] " + messageBody;
 
-                String message = "[" + address + "] " + messageBody;
-
-                String number = context.getSharedPreferences("data", Context.MODE_PRIVATE).getString("number", "");
-                if(number=="") {
-                    Log.i("sms","phone number not set. ignore this one.");
+                String dst_number = context.getSharedPreferences("sms-forward-data", Context.MODE_PRIVATE).getString("dst_number", "");
+                if(dst_number == "") {
+                    Log.d("sms-check","Destination phone number not set in preferences. Ignore this one.");
                     return;
                 }
-                Log.i("sms","sending to " + number);
 
-                Log.i("sms","message send:" + message);
-                SmsManager.getDefault().sendTextMessage(number,null,message,null,null);
+                String src_number = context.getSharedPreferences("sms-forward-data", Context.MODE_PRIVATE).getString("src_number", "");
+                if(src_number == "") {
+                    Log.d("sms-check","Source phone number not set in preferences. Ignore this one.");
+                    return;
+                }
+
+                String filter = context.getSharedPreferences("sms-forward-data", Context.MODE_PRIVATE).getString("filter", "");
+
+                Log.d("sms-check", "source number: " + address);
+                Log.d("sms-check", "message: " + messageBody);
+                Log.d("sms-check", "forward to: " + dst_number);
+                Log.d("sms-check", "source filter: " + src_number);
+                Log.d("sms-check", "message filter: " + filter);
+
+                if((address.equals(src_number)) && (messageBody.contains(filter))) {
+                    Log.d("sms-send", "send to " + dst_number);
+                    Log.d("sms-send", "message sent:" + message);
+                    SmsManager.getDefault().sendTextMessage(dst_number, null, message, null, null);
+                }
+
             }
         }
     }
